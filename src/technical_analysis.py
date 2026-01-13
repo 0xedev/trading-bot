@@ -204,10 +204,13 @@ class TechnicalAnalysisEngine:
         
         # Oversold condition - potential buy
         if rsi < self.config['rsi_oversold']:
-            confidence = 0.7 + (self.config['rsi_oversold'] - rsi) / 100  # Higher confidence as more oversold
+            # Confidence increases linearly from 0.65 to 0.9 as RSI goes from 30 to 0
+            # Ensures confidence stays in [0.65, 0.9] range naturally
+            oversold_degree = (self.config['rsi_oversold'] - rsi) / self.config['rsi_oversold']
+            confidence = 0.65 + (0.25 * oversold_degree)  # Range: 0.65 to 0.9
             return TradingSignal(
                 action='BUY',
-                confidence=min(confidence, 0.9),
+                confidence=confidence,
                 reason=f'RSI Oversold ({rsi:.1f})',
                 price=latest['close'],
                 metadata={'indicator': 'RSI', 'value': rsi}
@@ -215,10 +218,12 @@ class TechnicalAnalysisEngine:
         
         # Overbought condition - potential sell
         elif rsi > self.config['rsi_overbought']:
-            confidence = 0.7 + (rsi - self.config['rsi_overbought']) / 100
+            # Confidence increases linearly from 0.65 to 0.9 as RSI goes from 70 to 100
+            overbought_degree = (rsi - self.config['rsi_overbought']) / (100 - self.config['rsi_overbought'])
+            confidence = 0.65 + (0.25 * overbought_degree)  # Range: 0.65 to 0.9
             return TradingSignal(
                 action='SELL',
-                confidence=min(confidence, 0.9),
+                confidence=confidence,
                 reason=f'RSI Overbought ({rsi:.1f})',
                 price=latest['close'],
                 metadata={'indicator': 'RSI', 'value': rsi}
@@ -407,18 +412,20 @@ class TechnicalAnalysisEngine:
         return summary
 
 
-def get_sample_data(symbol: str = "BTCUSDT", periods: int = 100) -> pd.DataFrame:
+def get_sample_data(symbol: str = "BTCUSDT", periods: int = 100, seed: Optional[int] = 42) -> pd.DataFrame:
     """
     Generate sample OHLCV data for testing (when real data is not available).
     
     Args:
         symbol: Trading symbol
         periods: Number of periods to generate
+        seed: Random seed for reproducibility (None for random data)
         
     Returns:
         DataFrame with sample OHLCV data
     """
-    np.random.seed(42)
+    if seed is not None:
+        np.random.seed(seed)
     
     # Generate random walk for price
     base_price = 50000 if 'BTC' in symbol else 2500

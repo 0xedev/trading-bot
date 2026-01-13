@@ -102,9 +102,11 @@ class EnhancedRiskManager:
             avg_win = 0.05  # Assume 5% avg win
             avg_loss = 0.03  # Assume 3% avg loss
         
-        # Kelly formula: f = (p*W - (1-p)*L) / W
-        # where p = win rate, W = avg win, L = avg loss
-        kelly = (win_rate * avg_win - (1 - win_rate) * avg_loss) / avg_win
+        # Kelly formula: f = (bp - q) / b
+        # where b = avg_win/avg_loss (payoff ratio), p = win_rate, q = 1-p
+        # Simplified: f = (p*W - (1-p)*L) / L
+        # where W = avg win, L = avg loss
+        kelly = (win_rate * avg_win - (1 - win_rate) * avg_loss) / avg_loss
         
         # Apply fractional Kelly for safety
         fractional_kelly = kelly * self.config['kelly_fraction']
@@ -122,8 +124,8 @@ class EnhancedRiskManager:
         if len(self.trade_history) < 5:
             return 0, 0, 0
         
-        wins = [t for t in self.trade_history if t.is_win]
-        losses = [t for t in self.trade_history if t.is_win == False]
+        wins = [t for t in self.trade_history if t.is_win is True]
+        losses = [t for t in self.trade_history if t.is_win is False]
         
         win_rate = len(wins) / len(self.trade_history) if self.trade_history else 0
         avg_win = np.mean([t.pnl for t in wins]) if wins else 0
