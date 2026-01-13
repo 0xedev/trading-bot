@@ -4,4 +4,9 @@ openai
 pandas
 requests
 matplotlib
+pandas-ta
+numpy
+python-binance
+websockets
+python-telegram-bot
 
